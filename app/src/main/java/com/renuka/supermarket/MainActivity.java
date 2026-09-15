@@ -2,39 +2,23 @@ package com.renuka.supermarket;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.os.Environment;
-import android.webkit.JavascriptInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.webkit.WebView;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebViewClient;
 import android.webkit.WebSettings;
-import androidx.webkit.WebViewAssetLoader;
-import java.io.File;
-import java.io.FileOutputStream;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.JavascriptInterface;
+
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+
+import androidx.webkit.WebViewAssetLoader;
 
 public class MainActivity extends Activity {
     private WebView web;
-
-    public class AndroidBridge {
-        @JavascriptInterface
-        public void saveCsv(String filename, String data) {
-            try {
-                File dir = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DOWNLOADS
-                );
-                if (!dir.exists()) dir.mkdirs();
-
-                File file = new File(dir, filename);
-                FileOutputStream out = new FileOutputStream(file);
-                out.write(data.getBytes(StandardCharsets.UTF_8));
-                out.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    private String pendingCsv;
 
     @Override
     public void onCreate(Bundle b) {
@@ -42,14 +26,25 @@ public class MainActivity extends Activity {
 
         web = new WebView(this);
 
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void saveCsv(String data, String filename) {
+                pendingCsv = data;
+                try {
+                    Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    i.setType("text/csv");
+                    i.putExtra(Intent.EXTRA_TITLE, filename);
+                    startActivityForResult(i, 1001);
+                } catch (Exception e) {}
+            }
+        }, "Android");
+
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(false);
-
-        web.addJavascriptInterface(new AndroidBridge(), "Android");
 
         final WebViewAssetLoader assetLoader =
             new WebViewAssetLoader.Builder()
@@ -68,20 +63,44 @@ public class MainActivity extends Activity {
             public WebResourceResponse shouldInterceptRequest(
                     WebView view, String url) {
                 return assetLoader.shouldInterceptRequest(
-                    android.net.Uri.parse(url));
+                    Uri.parse(url));
             }
         });
 
         web.loadUrl(
-            "https://appassets.androidplatform.net/assets/index.html"
-        );
-
+            "https://appassets.androidplatform.net/assets/index.html");
         setContentView(web);
     }
 
     @Override
+    protected void onActivityResult(
+            int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 1001 &&
+            resultCode == RESULT_OK &&
+            data != null &&
+            data.getData() != null &&
+            pendingCsv != null) {
+
+            try {
+                Uri uri = data.getData();
+                OutputStream out =
+                    getContentResolver().openOutputStream(uri);
+                out.write(pendingCsv.getBytes(StandardCharsets.UTF_8));
+                out.close();
+            } catch (Exception e) {}
+
+            pendingCsv = null;
+        }
+    }
+
+    @Override
     public void onBackPressed() {
-        if (web.canGoBack()) web.goBack();
-        else super.onBackPressed();
+        if (web.canGoBack()) {
+            web.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 }
