@@ -1022,47 +1022,59 @@ async function exportXLSX(){
 }
 
 async function resetAll(){
-  if(!confirm('Erase ALL products and bills from this phone and cloud? This cannot be undone.')) return;
-  if(!confirm('Are you absolutely sure? This deletes the shared cloud data for all phones.')) return;
+  const ok = confirm(
+    "⚠️ ARE YOU REALLY SURE?\n\n" +
+    "This will permanently delete ALL products and ALL bills " +
+    "from the shared database for EVERY PHONE.\n\n" +
+    "This cannot be undone.\n\n" +
+    "Do you want to continue?"
+  );
+
+  if(!ok) return;
 
   try{
-    cloudUnsubs.forEach(u=>{ try{u();}catch(e){} });
-    cloudUnsubs=[];
+    // Stop real-time listeners so deleted data cannot be written
+    // back into the phone while the deletion is happening.
+    cloudUnsubs.forEach(u => {
+      try { u(); } catch(e) {}
+    });
+    cloudUnsubs = [];
 
-    for(const col of ['products','bills']){
-      const snap=await cloudDB.collection(col).get();
-      let batch=cloudDB.batch();
-      let count=0;
+    // Delete the complete shared Firestore data.
+    for(const col of ["products","bills"]){
+      while(true){
+        const snap = await cloudDB.collection(col).limit(400).get();
 
-      snap.forEach(doc=>{
-        batch.delete(doc.ref);
-        count++;
-        if(count===400){
-          batch.commit();
-          batch=cloudDB.batch();
-          count=0;
-        }
-      });
+        if(snap.empty) break;
 
-      if(count>0) await batch.commit();
+        const batch = cloudDB.batch();
+        snap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+      }
     }
 
-    await clearStore('products');
-    await clearStore('bills');
+    // Delete the complete local database.
+    await clearStore("products");
+    await clearStore("bills");
 
-    PRODUCTS=[];
-    BILLS=[];
-    cart=[];
+    PRODUCTS = [];
+    BILLS = [];
+    cart = [];
 
     renderDashboard();
     renderInventory();
     renderCart();
 
-    toast('All data erased successfully');
+    toast("ALL data deleted successfully");
+
+    // Restart sync with the now-empty database.
     startCloudSync();
+
   }catch(e){
-    console.error(e);
-    toast('Erase failed: '+(e.message||e));
+    console.error("Erase everything failed:", e);
+    toast("Delete failed: " + (e.message || e));
+
+    // Restore sync even if deletion fails.
     startCloudSync();
   }
 }
