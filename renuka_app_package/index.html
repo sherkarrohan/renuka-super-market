@@ -469,6 +469,23 @@ let cart = []; // {productId, name, qty, buyPrice, sellPrice}
 
 let cloudUnsubs = [];
 
+
+async function migrateLocalToCloud(){
+  const productSnap = await cloudDB.collection('products').limit(1).get();
+  if(productSnap.empty && PRODUCTS.length){
+    for(const product of PRODUCTS){
+      await cloudDB.collection('products').doc(product.id).set(product);
+    }
+  }
+
+  const billSnap = await cloudDB.collection('bills').limit(1).get();
+  if(billSnap.empty && BILLS.length){
+    for(const bill of BILLS){
+      await cloudDB.collection('bills').doc(bill.id).set(bill);
+    }
+  }
+}
+
 function startCloudSync(){
   cloudUnsubs.forEach(u => u());
   cloudUnsubs = [];
@@ -881,9 +898,10 @@ async function resetAll(){
 /* ---------------- boot ---------------- */
 (async function init(){
   await openDB();
-  startCloudSync();
   await loadProducts();
   await loadBills();
+  await migrateLocalToCloud();
+  startCloudSync();
   renderDashboard();
   renderInventory();
   renderCart();
