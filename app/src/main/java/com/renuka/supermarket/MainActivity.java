@@ -12,13 +12,14 @@ import android.webkit.WebResourceResponse;
 import android.webkit.JavascriptInterface;
 
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import androidx.webkit.WebViewAssetLoader;
 
 public class MainActivity extends Activity {
     private WebView web;
-    private String pendingCsv;
+    private String pendingData;
+    private String pendingMime;
 
     @Override
     public void onCreate(Bundle b) {
@@ -28,14 +29,19 @@ public class MainActivity extends Activity {
 
         web.addJavascriptInterface(new Object() {
             @JavascriptInterface
-            public void saveCsv(String data, String filename) {
-                pendingCsv = data;
+            public void saveFile(String base64, String mime, String filename) {
+                pendingData = base64;
+                pendingMime = mime;
+
                 try {
                     Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                    i.setType("text/csv");
+                    i.setType(mime);
                     i.putExtra(Intent.EXTRA_TITLE, filename);
                     startActivityForResult(i, 1001);
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                    pendingData = null;
+                    pendingMime = null;
+                }
             }
         }, "Android");
 
@@ -69,6 +75,7 @@ public class MainActivity extends Activity {
 
         web.loadUrl(
             "https://appassets.androidplatform.net/assets/index.html");
+
         setContentView(web);
     }
 
@@ -81,17 +88,23 @@ public class MainActivity extends Activity {
             resultCode == RESULT_OK &&
             data != null &&
             data.getData() != null &&
-            pendingCsv != null) {
+            pendingData != null) {
 
             try {
+                byte[] bytes = Base64.getDecoder().decode(pendingData);
                 Uri uri = data.getData();
+
                 OutputStream out =
                     getContentResolver().openOutputStream(uri);
-                out.write(pendingCsv.getBytes(StandardCharsets.UTF_8));
-                out.close();
-            } catch (Exception e) {}
 
-            pendingCsv = null;
+                out.write(bytes);
+                out.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            pendingData = null;
+            pendingMime = null;
         }
     }
 

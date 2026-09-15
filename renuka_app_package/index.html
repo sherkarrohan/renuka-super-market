@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script><script>
+<head><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script><script>
 const firebaseConfig = {
   apiKey: "AIzaSyDDukS8ZSgER7PV_wKAUGTJiJE2X1BHV04",
   authDomain: "renuka-super-market.firebaseapp.com",
@@ -352,8 +354,9 @@ try {
       <input type="file" id="importFile" accept="application/json" onchange="importData(event)">
       <p class="hint">Restoring replaces current data with the backup file's data.</p>
 
-      <div class="section-heading">Export bills as CSV</div>
-      <button class="btn btn-outline btn-block" onclick="exportCSV()">⬇ Export all bills (.csv)</button>
+      <div class="section-heading">Export bills</div>
+      <button class="btn btn-outline btn-block" onclick="exportPDF()">⬇ Export bills (PDF)</button>
+      <button class="btn btn-outline btn-block" onclick="exportXLSX()">⬇ Export bills (Excel .xlsx)</button>
 
       <div class="danger-zone">
         <h4>Reset all data</h4>
@@ -902,40 +905,165 @@ async function importData(evt){
   }
   evt.target.value='';
 }
-function exportCSV(){
-  let rows = [['Bill ID','Date','Time','Customer','Product','Qty','Buy Price','Sell Price','Line Total']];
-  BILLS.forEach(b=>{
-    b.items.forEach(i=>{
-      rows.push([b.id, b.date, new Date(b.createdAt).toLocaleTimeString('en-IN'), b.customer, i.name, i.qty, i.buyPrice, i.sellPrice, i.lineTotal]);
-    });
-  });
-  const csv = rows.map(r=>r.map(v=>`"${(v+'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `renuka_market_bills_${todayStr()}.csv`;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-  toast('CSV downloaded');
-}
-async function resetAll(){
-  if(!confirm("Erase ALL products and bills from this phone and cloud? This cannot be undone.")) return;
-  if(!confirm("Are you absolutely sure? This will delete the shared cloud data for all phones.")) return;
+async function exportPDF(){
   try{
-    for(const col of ["products","bills"]){
-      const snap=await cloudDB.collection(col).get();
-      const batch=cloudDB.batch();
-      snap.forEach(doc=>batch.delete(doc.ref));
-      if(!snap.empty) await batch.commit();
+    if(!BILLS.length){ toast('No bills to export'); return; }
+    if(!window.jspdf){ toast('PDF library not loaded'); return; }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 15;
+
+    doc.setFontSize(16);
+    doc.text('RENUKA SUPER MARKET', 14, y);
+    y += 9;
+    doc.setFontSize(10);
+    doc.text('Bills Report - ' + todayStr(), 14, y);
+    y += 8;
+
+    BILLS.forEach((b, index)=>{
+      if(y > 270){
+        doc.addPage();
+        y = 15;
+      }
+
+      doc.setFontSize(10);
+      doc.text('Bill: '+b.id.slice(-8), 14, y);
+      y += 5;
+      doc.text('Date: '+b.date+'  Customer: '+(b.customer||'Walk-in customer'), 14, y);
+      y += 5;
+      doc.text('Payment: '+(b.paymentMethod||'Cash'), 14, y);
+      y += 5;
+
+      b.items.forEach(i=>{
+        if(y > 280){ doc.addPage(); y=15; }
+        doc.text(`${i.name}  x${i.qty}  Rs.${Number(i.lineTotal||0).toFixed(2)}`, 18, y);
+        y += 5;
+      });
+
+      doc.text('Total: Rs.'+Number(b.grandTotal||0).toFixed(2)+'  Profit: Rs.'+Number(b.profit||0).toFixed(2), 18, y);
+      y += 8;
+
+      if(index < BILLS.length-1){
+        doc.line(14,y-3,196,y-3);
+      }
+    });
+
+    const data=doc.output('datauristring').split(',')[1];
+    const filename=`renuka_market_bills_${todayStr()}.pdf`;
+
+    if(window.Android && Android.saveFile){
+      Android.saveFile(data,'application/pdf',filename);
+      toast('Choose where to save the PDF');
+    }else{
+      doc.save(filename);
+      toast('PDF created');
     }
-    await clearStore("products");
-    await clearStore("bills");
-    await loadProducts(); await loadBills();
-    renderDashboard(); renderInventory();
-    toast("All data erased from phone and cloud");
   }catch(e){
     console.error(e);
-    toast("Could not erase cloud data: "+(e.message||e));
+    toast('Could not create PDF');
+  }
+}
+
+async function exportXLSX(){
+  try{
+    if(!BILLS.length){ toast('No bills to export'); return; }
+    if(!window.XLSX){ toast('Excel library not loaded'); return; }
+
+    const rows=[['Bill ID','Date','Time','Customer','Payment','Product','Qty','Buy Price','Sell Price','Line Total','Bill Total','Profit']];
+
+    BILLS.forEach(b=>{
+      b.items.forEach(i=>{
+        rows.push([
+          b.id,
+          b.date,
+          new Date(b.createdAt).toLocaleTimeString('en-IN'),
+          b.customer||'Walk-in customer',
+          b.paymentMethod||'Cash',
+          i.name,
+          i.qty,
+          i.buyPrice,
+          i.sellPrice,
+          i.lineTotal,
+          b.grandTotal,
+          b.profit
+        ]);
+      });
+    });
+
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Bills');
+
+    const bytes=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const binary=Array.from(new Uint8Array(bytes),b=>String.fromCharCode(b)).join('');
+    const data=btoa(binary);
+    const filename=`renuka_market_bills_${todayStr()}.xlsx`;
+
+    if(window.Android && Android.saveFile){
+      Android.saveFile(data,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',filename);
+      toast('Choose where to save the Excel file');
+    }else{
+      const blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download=filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('Excel file created');
+    }
+  }catch(e){
+    console.error(e);
+    toast('Could not create Excel file');
+  }
+}
+
+async function resetAll(){
+  if(!confirm('Erase ALL products and bills from this phone and cloud? This cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? This deletes the shared cloud data for all phones.')) return;
+
+  try{
+    cloudUnsubs.forEach(u=>{ try{u();}catch(e){} });
+    cloudUnsubs=[];
+
+    for(const col of ['products','bills']){
+      const snap=await cloudDB.collection(col).get();
+      let batch=cloudDB.batch();
+      let count=0;
+
+      snap.forEach(doc=>{
+        batch.delete(doc.ref);
+        count++;
+        if(count===400){
+          batch.commit();
+          batch=cloudDB.batch();
+          count=0;
+        }
+      });
+
+      if(count>0) await batch.commit();
+    }
+
+    await clearStore('products');
+    await clearStore('bills');
+
+    PRODUCTS=[];
+    BILLS=[];
+    cart=[];
+
+    renderDashboard();
+    renderInventory();
+    renderCart();
+
+    toast('All data erased successfully');
+    startCloudSync();
+  }catch(e){
+    console.error(e);
+    toast('Erase failed: '+(e.message||e));
+    startCloudSync();
   }
 }
 
