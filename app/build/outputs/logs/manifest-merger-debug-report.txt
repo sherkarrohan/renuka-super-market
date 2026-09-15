@@ -1,0 +1,78 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:1:1-7:37
+INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:1:1-7:37
+INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:1:1-7:37
+INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:1:1-7:37
+MERGED from [androidx.webkit:webkit:1.12.1] /home/codespace/.gradle/caches/8.9/transforms/9febd1cf1c3effdc2e76418da84a7529/transformed/webkit-1.12.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.core:core:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/6f61606391ba590d6ca80cbdda7a3ded/transformed/core-1.1.0/AndroidManifest.xml:17:1-26:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/aae8672b60dc56ea86de13b8f1502c6d/transformed/versionedparcelable-1.1.0/AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/codespace/.gradle/caches/8.9/transforms/ec2a3d141c180ad55e2138fcc3be2e8c/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.0.0] /home/codespace/.gradle/caches/8.9/transforms/b33fcacb9a636acc74f01415264bb0f8/transformed/lifecycle-runtime-2.0.0/AndroidManifest.xml:17:1-22:12
+	package
+		INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.INTERNET
+ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:2:1-62
+	android:name
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:2:18-60
+application
+ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:4:1-7:26
+INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:4:1-7:26
+MERGED from [androidx.core:core:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/6f61606391ba590d6ca80cbdda7a3ded/transformed/core-1.1.0/AndroidManifest.xml:24:5-89
+MERGED from [androidx.core:core:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/6f61606391ba590d6ca80cbdda7a3ded/transformed/core-1.1.0/AndroidManifest.xml:24:5-89
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/aae8672b60dc56ea86de13b8f1502c6d/transformed/versionedparcelable-1.1.0/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/aae8672b60dc56ea86de13b8f1502c6d/transformed/versionedparcelable-1.1.0/AndroidManifest.xml:24:5-25:19
+	android:extractNativeLibs
+		INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml
+	android:appComponentFactory
+		ADDED from [androidx.core:core:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/6f61606391ba590d6ca80cbdda7a3ded/transformed/core-1.1.0/AndroidManifest.xml:24:18-86
+	android:supportsRtl
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:4:107-133
+	android:label
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:4:46-78
+	android:allowBackup
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:4:79-106
+	android:theme
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:4:14-45
+activity#com.renuka.supermarket.MainActivity
+ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:5:1-7:12
+	android:screenOrientation
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:5:40-76
+	android:exported
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:5:77-100
+	android:name
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:5:11-39
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:6:1-142
+action#android.intent.action.MAIN
+ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:6:16-67
+	android:name
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:6:24-65
+category#android.intent.category.LAUNCHER
+ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:6:67-126
+	android:name
+		ADDED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml:6:77-124
+uses-sdk
+INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml
+INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml
+MERGED from [androidx.webkit:webkit:1.12.1] /home/codespace/.gradle/caches/8.9/transforms/9febd1cf1c3effdc2e76418da84a7529/transformed/webkit-1.12.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.webkit:webkit:1.12.1] /home/codespace/.gradle/caches/8.9/transforms/9febd1cf1c3effdc2e76418da84a7529/transformed/webkit-1.12.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/6f61606391ba590d6ca80cbdda7a3ded/transformed/core-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.core:core:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/6f61606391ba590d6ca80cbdda7a3ded/transformed/core-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/aae8672b60dc56ea86de13b8f1502c6d/transformed/versionedparcelable-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.0] /home/codespace/.gradle/caches/8.9/transforms/aae8672b60dc56ea86de13b8f1502c6d/transformed/versionedparcelable-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/codespace/.gradle/caches/8.9/transforms/ec2a3d141c180ad55e2138fcc3be2e8c/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/codespace/.gradle/caches/8.9/transforms/ec2a3d141c180ad55e2138fcc3be2e8c/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.0.0] /home/codespace/.gradle/caches/8.9/transforms/b33fcacb9a636acc74f01415264bb0f8/transformed/lifecycle-runtime-2.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.0.0] /home/codespace/.gradle/caches/8.9/transforms/b33fcacb9a636acc74f01415264bb0f8/transformed/lifecycle-runtime-2.0.0/AndroidManifest.xml:20:5-44
+	android:targetSdkVersion
+		INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /workspaces/renuka-super-market/app/src/main/AndroidManifest.xml
