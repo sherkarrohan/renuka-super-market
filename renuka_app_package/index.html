@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script><script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDDukS8ZSgER7PV_wKAUGTJiJE2X1BHV04",
+  authDomain: "renuka-super-market.firebaseapp.com",
+  projectId: "renuka-super-market",
+  storageBucket: "renuka-super-market.firebasestorage.app",
+  messagingSenderId: "66043492851",
+  appId: "1:66043492851:web:97176ec3343f7b59bd7a86"
+};
+firebase.initializeApp(firebaseConfig);
+const cloudDB = firebase.firestore();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Renuka Super Market — Billing &amp; Inventory</title>
+<style>
+  :root{
+    --ink:#132318;
+    --bg:#EEF3EA;
+    --panel:#FFFFFF;
+    --green:#1F4D36;
+    --green-dark:#123425;
+    --amber:#D89B2C;
+    --amber-dark:#B47F1D;
+    --red:#B3402E;
+    --line:#D8E0D2;
+    --muted:#5B6B60;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Segoe UI',Roboto,'Noto Sans','Helvetica Neue',Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);}
+
+  header.topbar{
+    background:var(--green);
+    color:#fff;
+    padding:16px 18px 14px;
+    position:sticky;top:0;z-index:20;
+    box-shadow:0 2px 10px rgba(0,0,0,.12);
+  }
+  header.topbar .brand{display:flex;align-items:baseline;gap:8px;}
+  header.topbar .brand .mark{
+    font-family:Georgia,'Times New Roman',serif;
+    font-weight:700;font-size:1.5rem;letter-spacing:.3px;
+  }
+  header.topbar .brand .sub{font-size:.72rem;color:#CFE0D4;letter-spacing:.5px;}
+  header.topbar .screen-title{margin-top:6px;font-size:1rem;font-weight:600;color:#fff;}
+
+  main{flex:1;padding:14px 14px 90px;}
+
+  .view{display:none;}
+  .view.active{display:block;animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stat{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 14px 12px;
+  }
+  .stat .label{font-size:.72rem;color:var(--muted);text-transform:none;margin-bottom:6px;}
+  .stat .value{font-size:1.35rem;font-weight:700;color:var(--green-dark);}
+  .stat.warn .value{color:var(--red);}
+  .stat.full{grid-column:1/-1;}
+
+  .section-heading{font-size:.95rem;font-weight:700;margin:18px 0 8px;color:var(--green-dark);}
+
+  .quickrow{display:flex;gap:10px;margin-top:4px;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    border:none;border-radius:9px;padding:12px 16px;
+    font-size:.92rem;font-weight:600;cursor:pointer;
+    transition:transform .05s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--green);color:#fff;}
+  .btn-amber{background:var(--amber);color:#241a04;}
+  .btn-outline{background:transparent;color:var(--green-dark);border:1.5px solid var(--green);}
+  .btn-danger{background:var(--red);color:#fff;}
+  .btn-block{width:100%;}
+  .btn-sm{padding:8px 12px;font-size:.82rem;border-radius:7px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  input,select,textarea{
+    width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:8px;
+    font-size:.95rem;background:#fff;color:var(--ink);font-family:inherit;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);}
+  label{font-size:.78rem;color:var(--muted);display:block;margin:10px 0 4px;font-weight:600;}
+  .field-row{display:flex;gap:10px;}
+  .field-row > div{flex:1;}
+
+  table{width:100%;border-collapse:collapse;font-size:.86rem;}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:.72rem;padding:6px 6px;border-bottom:1.5px solid var(--line);}
+  td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  .num{text-align:right;font-variant-numeric:tabular-nums;}
+
+  .listcard{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:10px 4px;margin-bottom:12px;overflow-x:auto;
+  }
+
+  .searchbar{position:relative;margin-bottom:10px;}
+  .searchbar input{padding-left:34px;}
+  .searchbar::before{
+    content:"⌕";position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    color:var(--muted);font-size:1rem;
+  }
+
+  .prow{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:11px 12px;margin-bottom:8px;
+  }
+  .prow .pname{font-weight:600;font-size:.92rem;}
+  .prow .pmeta{font-size:.74rem;color:var(--muted);margin-top:2px;}
+  .prow .pright{text-align:right;}
+  .prow .pstock{font-size:.82rem;font-weight:700;}
+  .pstock.low{color:var(--red);}
+  .prow .pactions{display:flex;gap:6px;margin-top:6px;}
+  .tag-low{display:inline-block;background:#FBE7E2;color:var(--red);font-size:.65rem;font-weight:700;padding:2px 6px;border-radius:5px;margin-left:6px;}
+
+  .cartline{
+    display:flex;align-items:center;gap:8px;background:var(--panel);
+    border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-bottom:7px;
+  }
+  .cartline .cname{flex:1;font-size:.86rem;font-weight:600;}
+  .cartline .cprice{font-size:.72rem;color:var(--muted);}
+  .qtybox{display:flex;align-items:center;gap:6px;}
+  .qtybox button{width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:1rem;cursor:pointer;}
+  .qtybox span{min-width:22px;text-align:center;font-weight:700;font-size:.88rem;}
+  .clinetotal{width:64px;text-align:right;font-weight:700;font-size:.86rem;}
+  .removeline{background:none;border:none;color:var(--red);font-size:1.1rem;cursor:pointer;padding:0 2px;}
+
+  .totalsbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:6px;}
+  .totalsbox .trow{display:flex;justify-content:space-between;font-size:.86rem;padding:4px 0;}
+  .totalsbox .trow.grand{font-size:1.1rem;font-weight:800;border-top:1.5px dashed var(--line);margin-top:6px;padding-top:8px;color:var(--green-dark);}
+
+  nav.bottomnav{
+    position:fixed;bottom:0;left:0;right:0;
+    max-width:520px;margin:0 auto;
+    background:#fff;border-top:1px solid var(--line);
+    display:flex;z-index:20;
+    box-shadow:0 -2px 10px rgba(0,0,0,.06);
+  }
+  nav.bottomnav button{
+    flex:1;background:none;border:none;padding:10px 4px 8px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--muted);font-size:.66rem;font-weight:600;cursor:pointer;
+  }
+  nav.bottomnav button .ic{font-size:1.25rem;line-height:1;}
+  nav.bottomnav button.active{color:var(--green);}
+
+  .modal-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(10,20,14,.45);
+    z-index:50;align-items:flex-end;justify-content:center;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:#fff;width:100%;max-width:520px;border-radius:16px 16px 0 0;
+    padding:18px 18px 22px;max-height:88vh;overflow-y:auto;
+    animation:slideup .2s ease;
+  }
+  @keyframes slideup{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal h3{margin:0 0 4px;font-size:1.05rem;color:var(--green-dark);}
+  .modal .close{position:absolute;}
+  .modal-actions{display:flex;gap:10px;margin-top:16px;}
+
+  .tabbar{display:flex;gap:6px;margin-bottom:12px;background:#E3EBDE;border-radius:9px;padding:4px;}
+  .tabbar button{flex:1;border:none;background:none;padding:9px 4px;border-radius:7px;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;}
+  .tabbar button.active{background:#fff;color:var(--green-dark);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+
+  .empty{text-align:center;color:var(--muted);font-size:.85rem;padding:26px 10px;}
+
+  .toast{
+    position:fixed;bottom:78px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;
+    font-size:.82rem;z-index:80;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  .receipt{background:#fff;border:1px dashed var(--line);border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:.8rem;}
+  .receipt .rline{display:flex;justify-content:space-between;}
+  .receipt hr{border:none;border-top:1px dashed #999;margin:8px 0;}
+  .receipt .center{text-align:center;}
+
+  .danger-zone{border:1.5px solid #F0CFC8;background:#FDF4F2;border-radius:10px;padding:14px;margin-top:20px;}
+  .danger-zone h4{margin:0 0 6px;color:var(--red);font-size:.88rem;}
+  .danger-zone p{font-size:.76rem;color:var(--muted);margin:0 0 10px;}
+
+  .hint{font-size:.74rem;color:var(--muted);margin-top:6px;line-height:1.4;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{position:absolute;top:0;left:0;width:100%;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">Renuka Super Market</span>
+    </div>
+    <div class="sub">Billing &amp; Inventory · stored on this phone only</div>
+    <div class="screen-title" id="screenTitle">Dashboard</div>
+  </header>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="cardgrid">
+        <div class="stat"><div class="label">Today's sales</div><div class="value" id="dToday">₹0</div></div>
+        <div class="stat"><div class="label">Today's profit</div><div class="value" id="dTodayProfit">₹0</div></div>
+        <div class="stat"><div class="label">This month's sales</div><div class="value" id="dMonth">₹0</div></div>
+        <div class="stat"><div class="label">This month's profit</div><div class="value" id="dMonthProfit">₹0</div></div>
+        <div class="stat"><div class="label">Inventory value (at cost)</div><div class="value" id="dStockValue">₹0</div></div>
+        <div class="stat warn"><div class="label">Low stock items</div><div class="value" id="dLowStock">0</div></div>
+      </div>
+
+      <div class="section-heading">Quick actions</div>
+      <div class="quickrow">
+        <button class="btn btn-primary btn-block" onclick="go('billing')">+ New Bill</button>
+        <button class="btn btn-amber btn-block" onclick="openProductModal()">+ Add Product</button>
+      </div>
+
+      <div class="section-heading">Recent bills</div>
+      <div class="listcard" id="recentBills"><div class="empty">No bills yet. Create your first bill.</div></div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section class="view" id="view-inventory">
+      <div class="searchbar"><input id="invSearch" placeholder="Search product name or category" oninput="renderInventory()"></div>
+      <button class="btn btn-primary btn-block" onclick="openProductModal()" style="margin-bottom:12px;">+ Add New Product</button>
+      <div id="invList"></div>
+    </section>
+
+    <!-- BILLING -->
+    <section class="view" id="view-billing">
+      <div class="searchbar"><input id="billSearch" placeholder="Search product to add to bill" oninput="renderBillSearch()"></div>
+      <div id="billSearchResults"></div>
+
+      <div class="section-heading" id="cartHeading" style="display:none;">Bill items</div>
+      <div id="cartList"></div>
+
+      <div id="billTotalsWrap" style="display:none;">
+        <label>Discount (₹)</label>
+        <input type="number" id="billDiscount" min="0" value="0" oninput="renderCart()">
+        <label>Customer name (optional)</label>
+        <input type="text" id="billCustomer" placeholder="Walk-in customer">
+        <div class="totalsbox">
+          <div class="trow"><span>Items total</span><span id="tItems">₹0</span></div>
+          <div class="trow"><span>Discount</span><span id="tDiscount">₹0</span></div>
+          <div class="trow grand"><span>Payable</span><span id="tGrand">₹0</span></div>
+        </div>
+        <div class="quickrow" style="margin-top:12px;">
+          <button class="btn btn-outline btn-block" onclick="clearCart()">Clear</button>
+          <button class="btn btn-primary btn-block" onclick="saveBill()">Save &amp; Print Bill</button>
+        </div>
+      </div>
+      <div class="empty" id="cartEmpty">Search a product above and tap it to add to the bill.</div>
+    </section>
+
+    <!-- REPORTS -->
+    <section class="view" id="view-reports">
+      <div class="tabbar">
+        <button class="rtab active" data-tab="daily" onclick="setReportTab('daily')">Daily Book</button>
+        <button class="rtab" data-tab="monthly" onclick="setReportTab('monthly')">Monthly Book</button>
+        <button class="rtab" data-tab="gross" onclick="setReportTab('gross')">Gross / Overall</button>
+      </div>
+
+      <div id="rp-daily">
+        <label>Select date</label>
+        <input type="date" id="dailyDate" onchange="renderDaily()">
+        <div class="cardgrid" style="margin-top:12px;">
+          <div class="stat"><div class="label">Sales</div><div class="value" id="dayTotalSales">₹0</div></div>
+          <div class="stat"><div class="label">Profit</div><div class="value" id="dayTotalProfit">₹0</div></div>
+        </div>
+        <div class="section-heading">Bills on this day</div>
+        <div class="listcard" id="dayBillsList"></div>
+      </div>
+
+      <div id="rp-monthly" style="display:none;">
+        <label>Select month</label>
+        <input type="month" id="monthPick" onchange="renderMonthly()">
+        <div class="cardgrid" style="margin-top:12px;">
+          <div class="stat"><div class="label">Sales</div><div class="value" id="monTotalSales">₹0</div></div>
+          <div class="stat"><div class="label">Profit</div><div class="value" id="monTotalProfit">₹0</div></div>
+        </div>
+        <div class="section-heading">Day-by-day</div>
+        <div class="listcard"><table id="monthTable"><thead><tr><th>Date</th><th class="num">Sales</th><th class="num">Profit</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <div id="rp-gross" style="display:none;">
+        <div class="field-row">
+          <div><label>From</label><input type="date" id="grossFrom" onchange="renderGross()"></div>
+          <div><label>To</label><input type="date" id="grossTo" onchange="renderGross()"></div>
+        </div>
+        <div class="cardgrid" style="margin-top:12px;">
+          <div class="stat"><div class="label">Total revenue</div><div class="value" id="gRevenue">₹0</div></div>
+          <div class="stat"><div class="label">Total cost</div><div class="value" id="gCost">₹0</div></div>
+          <div class="stat full"><div class="label">Gross profit</div><div class="value" id="gProfit">₹0</div></div>
+          <div class="stat full"><div class="label">Profit margin</div><div class="value" id="gMargin">0%</div></div>
+        </div>
+        <div class="section-heading">Top selling products</div>
+        <div class="listcard"><table id="topTable"><thead><tr><th>Product</th><th class="num">Qty sold</th><th class="num">Profit</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS / BACKUP -->
+    <section class="view" id="view-settings">
+      <div class="section-heading">Backup your data</div>
+      <p class="hint">All your products and bills are stored only in this phone's browser storage — nothing is sent anywhere. Browser storage can be lost if you clear app/browser data or uninstall, so back up regularly using the button below and keep the file safe (e.g. share it to Google Drive or WhatsApp yourself).</p>
+      <button class="btn btn-primary btn-block" onclick="exportData()">⬇ Export backup (.json)</button>
+
+      <div class="section-heading">Restore from backup</div>
+      <input type="file" id="importFile" accept="application/json" onchange="importData(event)">
+      <p class="hint">Restoring replaces current data with the backup file's data.</p>
+
+      <div class="section-heading">Export bills as CSV</div>
+      <button class="btn btn-outline btn-block" onclick="exportCSV()">⬇ Export all bills (.csv)</button>
+
+      <div class="danger-zone">
+        <h4>Reset all data</h4>
+        <p>Deletes every product and bill on this phone. This cannot be undone — export a backup first.</p>
+        <button class="btn btn-danger btn-block" onclick="resetAll()">Erase everything</button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottomnav">
+    <button class="navbtn active" data-v="dashboard" onclick="go('dashboard')"><span class="ic">⌂</span>Dashboard</button>
+    <button class="navbtn" data-v="inventory" onclick="go('inventory')"><span class="ic">▤</span>Inventory</button>
+    <button class="navbtn" data-v="billing" onclick="go('billing')"><span class="ic">₹</span>Billing</button>
+    <button class="navbtn" data-v="reports" onclick="go('reports')"><span class="ic">▦</span>Reports</button>
+    <button class="navbtn" data-v="settings" onclick="go('settings')"><span class="ic">⚙</span>Backup</button>
+  </nav>
+</div>
+
+<!-- Product modal -->
+<div class="modal-backdrop" id="productModalBackdrop">
+  <div class="modal">
+    <h3 id="productModalTitle">Add product</h3>
+    <input type="hidden" id="pId">
+    <label>Product name *</label>
+    <input type="text" id="pName" placeholder="e.g. Tata Salt 1kg">
+    <div class="field-row">
+      <div><label>Category</label><input type="text" id="pCategory" placeholder="e.g. Grocery"></div>
+      <div><label>Unit</label><input type="text" id="pUnit" placeholder="pcs / kg / ltr"></div>
+    </div>
+    <div class="field-row">
+      <div><label>Buy price (₹) *</label><input type="number" id="pBuy" min="0" step="0.01"></div>
+      <div><label>Sell price (₹) *</label><input type="number" id="pSell" min="0" step="0.01"></div>
+    </div>
+    <div class="field-row">
+      <div><label>Quantity in stock *</label><input type="number" id="pQty" min="0" step="1"></div>
+      <div><label>Low stock alert below</label><input type="number" id="pLow" min="0" step="1" value="5"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-block" onclick="closeProductModal()">Cancel</button>
+      <button class="btn btn-primary btn-block" onclick="saveProduct()">Save product</button>
+    </div>
+    <div id="pDeleteWrap" style="margin-top:10px;display:none;">
+      <button class="btn btn-danger btn-block" onclick="deleteProductConfirm()">Delete this product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt modal -->
+<div class="modal-backdrop" id="receiptModalBackdrop">
+  <div class="modal">
+    <h3>Bill saved</h3>
+    <div id="printArea" class="receipt"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-block" onclick="closeReceiptModal()">Close</button>
+      <button class="btn btn-primary btn-block" onclick="window.print()">Print</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- IndexedDB layer ---------------- */
+const DB_NAME = 'renuka_market_db';
+const DB_VERSION = 1;
+let db;
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e)=>{
+      const _db = e.target.result;
+      if(!_db.objectStoreNames.contains('products')){
+        const ps = _db.createObjectStore('products',{keyPath:'id'});
+        ps.createIndex('name','name',{unique:false});
+      }
+      if(!_db.objectStoreNames.contains('bills')){
+        const bs = _db.createObjectStore('bills',{keyPath:'id'});
+        bs.createIndex('date','date',{unique:false});
+      }
+    };
+    req.onsuccess = (e)=>{ db = e.target.result; resolve(db); };
+    req.onerror = (e)=> reject(e);
+  });
+}
+
+function tx(store, mode='readonly'){
+  return db.transaction(store, mode).objectStore(store);
+}
+function getAll(store){
+  return new Promise((resolve,reject)=>{
+    const req = tx(store).getAll();
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = (e)=>reject(e);
+  });
+}
+function put(store, value){
+  return new Promise((resolve,reject)=>{
+    const req = tx(store,'readwrite').put(value);
+    req.onsuccess = ()=>resolve(value);
+    req.onerror = (e)=>reject(e);
+  });
+}
+function del(store, id){
+  return new Promise((resolve,reject)=>{
+    const req = tx(store,'readwrite').delete(id);
+    req.onsuccess = ()=>resolve();
+    req.onerror = (e)=>reject(e);
+  });
+}
+function clearStore(store){
+  return new Promise((resolve,reject)=>{
+    const req = tx(store,'readwrite').clear();
+    req.onsuccess = ()=>resolve();
+    req.onerror = (e)=>reject(e);
+  });
+}
+
+/* ---------------- helpers ---------------- */
+function uid(prefix){ return prefix+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8); }
+function rupee(n){ return '₹'+(Math.round((n||0)*100)/100).toLocaleString('en-IN',{maximumFractionDigits:2}); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function monthStr(){ return new Date().toISOString().slice(0,7); }
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+let PRODUCTS = [];
+let BILLS = [];
+let cart = []; // {productId, name, qty, buyPrice, sellPrice}
+
+let cloudUnsubs = [];
+
+function startCloudSync(){
+  cloudUnsubs.forEach(u => u());
+  cloudUnsubs = [];
+
+  cloudUnsubs.push(
+    cloudDB.collection('products').onSnapshot(async snap => {
+      for(const change of snap.docChanges()){
+        if(change.type === 'removed') await del('products', change.doc.id);
+        else await put('products', change.doc.data());
+      }
+      await loadProducts();
+      renderInventory();
+      renderDashboard();
+    })
+  );
+
+  cloudUnsubs.push(
+    cloudDB.collection('bills').onSnapshot(async snap => {
+      for(const change of snap.docChanges()){
+        if(change.type !== 'removed') await put('bills', change.doc.data());
+      }
+      await loadBills();
+      renderDashboard();
+    })
+  );
+}
+
+
+/* ---------------- navigation ---------------- */
+function go(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(el=>el.classList.toggle('active', el.dataset.v===v));
+  const titles = {dashboard:'Dashboard', inventory:'Inventory', billing:'New Bill', reports:'Reports', settings:'Backup & Settings'};
+  document.getElementById('screenTitle').textContent = titles[v];
+  if(v==='dashboard') renderDashboard();
+  if(v==='inventory') renderInventory();
+  if(v==='reports') { initReportDates(); renderDaily(); renderMonthly(); renderGross(); }
+}
+
+/* ---------------- product CRUD ---------------- */
+function openProductModal(product){
+  document.getElementById('productModalTitle').textContent = product? 'Edit product' : 'Add product';
+  document.getElementById('pId').value = product? product.id : '';
+  document.getElementById('pName').value = product? product.name : '';
+  document.getElementById('pCategory').value = product? product.category||'' : '';
+  document.getElementById('pUnit').value = product? product.unit||'pcs' : 'pcs';
+  document.getElementById('pBuy').value = product? product.buyPrice : '';
+  document.getElementById('pSell').value = product? product.sellPrice : '';
+  document.getElementById('pQty').value = product? product.quantity : '';
+  document.getElementById('pLow').value = product? (product.lowStock??5) : 5;
+  document.getElementById('pDeleteWrap').style.display = product? 'block':'none';
+  document.getElementById('productModalBackdrop').classList.add('open');
+}
+function closeProductModal(){ document.getElementById('productModalBackdrop').classList.remove('open'); }
+
+async function saveProduct(){
+  const id = document.getElementById('pId').value || uid('p');
+  const name = document.getElementById('pName').value.trim();
+  const buyPrice = parseFloat(document.getElementById('pBuy').value);
+  const sellPrice = parseFloat(document.getElementById('pSell').value);
+  const quantity = parseFloat(document.getElementById('pQty').value);
+  if(!name || isNaN(buyPrice) || isNaN(sellPrice) || isNaN(quantity)){
+    toast('Please fill name, buy price, sell price and quantity'); return;
+  }
+  const product = {
+    id, name,
+    category: document.getElementById('pCategory').value.trim(),
+    unit: document.getElementById('pUnit').value.trim() || 'pcs',
+    buyPrice, sellPrice, quantity,
+    lowStock: parseFloat(document.getElementById('pLow').value) || 0,
+    updatedAt: Date.now()
+  };
+  await put('products', product);
+  await cloudDB.collection('products').doc(product.id).set(product);
+  await loadProducts();
+  closeProductModal();
+  renderInventory();
+  renderDashboard();
+  toast('Product saved');
+}
+function deleteProductConfirm(){
+  const id = document.getElementById('pId').value;
+  if(!id) return;
+  if(confirm('Delete this product? This cannot be undone.')){
+    del('products', id).then(async ()=>{
+      await loadProducts();
+      closeProductModal();
+      renderInventory();
+      renderDashboard();
+      toast('Product deleted');
+    });
+  }
+}
+async function loadProducts(){ PRODUCTS = await getAll('products'); PRODUCTS.sort((a,b)=>a.name.localeCompare(b.name)); }
+async function loadBills(){ BILLS = await getAll('bills'); BILLS.sort((a,b)=> b.createdAt - a.createdAt); }
+
+function renderInventory(){
+  const q = (document.getElementById('invSearch').value||'').toLowerCase();
+  const list = document.getElementById('invList');
+  const filtered = PRODUCTS.filter(p => p.name.toLowerCase().includes(q) || (p.category||'').toLowerCase().includes(q));
+  if(filtered.length===0){ list.innerHTML = '<div class="empty">No products found.</div>'; return; }
+  list.innerHTML = filtered.map(p=>{
+    const low = p.quantity <= (p.lowStock||0);
+    return `<div class="prow">
+      <div>
+        <div class="pname">${esc(p.name)} ${low?'<span class="tag-low">LOW</span>':''}</div>
+        <div class="pmeta">${esc(p.category||'—')} · Buy ${rupee(p.buyPrice)} · Sell ${rupee(p.sellPrice)}</div>
+        <div class="pactions">
+          <button class="btn btn-outline btn-sm" onclick='openProductModal(${JSON.stringify(p).replace(/'/g,"&#39;")})'>Edit</button>
+        </div>
+      </div>
+      <div class="pright">
+        <div class="pstock ${low?'low':''}">${p.quantity} ${esc(p.unit)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------- billing ---------------- */
+function renderBillSearch(){
+  const q = (document.getElementById('billSearch').value||'').trim().toLowerCase();
+  const box = document.getElementById('billSearchResults');
+  if(!q){ box.innerHTML=''; return; }
+  const results = PRODUCTS.filter(p=>p.name.toLowerCase().includes(q)).slice(0,8);
+  if(results.length===0){ box.innerHTML = '<div class="empty">No matching product.</div>'; return; }
+  box.innerHTML = results.map(p=>`
+    <div class="prow" style="cursor:pointer;" onclick="addToCart('${p.id}')">
+      <div>
+        <div class="pname">${esc(p.name)}</div>
+        <div class="pmeta">Stock ${p.quantity} ${esc(p.unit)} · Sell ${rupee(p.sellPrice)}</div>
+      </div>
+      <div class="pright"><button class="btn btn-amber btn-sm">Add</button></div>
+    </div>`).join('');
+}
+function addToCart(productId){
+  const p = PRODUCTS.find(x=>x.id===productId);
+  if(!p) return;
+  if(p.quantity<=0){ toast('This product is out of stock'); return; }
+  let line = cart.find(c=>c.productId===productId);
+  if(line){
+    if(line.qty+1 > p.quantity){ toast('Not enough stock'); return; }
+    line.qty += 1;
+  } else {
+    cart.push({productId:p.id, name:p.name, unit:p.unit, buyPrice:p.buyPrice, sellPrice:p.sellPrice, qty:1, maxQty:p.quantity});
+  }
+  document.getElementById('billSearch').value='';
+  document.getElementById('billSearchResults').innerHTML='';
+  renderCart();
+}
+function changeQty(productId, delta){
+  const line = cart.find(c=>c.productId===productId);
+  if(!line) return;
+  const p = PRODUCTS.find(x=>x.id===productId);
+  const newQty = line.qty + delta;
+  if(newQty<=0){ cart = cart.filter(c=>c.productId!==productId); }
+  else if(p && newQty>p.quantity){ toast('Not enough stock'); return; }
+  else { line.qty = newQty; }
+  renderCart();
+}
+function removeLine(productId){ cart = cart.filter(c=>c.productId!==productId); renderCart(); }
+function clearCart(){ cart=[]; renderCart(); }
+
+function renderCart(){
+  const cartList = document.getElementById('cartList');
+  const heading = document.getElementById('cartHeading');
+  const totalsWrap = document.getElementById('billTotalsWrap');
+  const emptyMsg = document.getElementById('cartEmpty');
+  if(cart.length===0){
+    cartList.innerHTML=''; heading.style.display='none'; totalsWrap.style.display='none'; emptyMsg.style.display='block';
+    return;
+  }
+  heading.style.display='block'; totalsWrap.style.display='block'; emptyMsg.style.display='none';
+  cartList.innerHTML = cart.map(c=>`
+    <div class="cartline">
+      <div style="flex:1;">
+        <div class="cname">${esc(c.name)}</div>
+        <div class="cprice">${rupee(c.sellPrice)} / ${esc(c.unit)}</div>
+      </div>
+      <div class="qtybox">
+        <button onclick="changeQty('${c.productId}',-1)">−</button>
+        <span>${c.qty}</span>
+        <button onclick="changeQty('${c.productId}',1)">+</button>
+      </div>
+      <div class="clinetotal">${rupee(c.qty*c.sellPrice)}</div>
+      <button class="removeline" onclick="removeLine('${c.productId}')">×</button>
+    </div>`).join('');
+
+  const itemsTotal = cart.reduce((s,c)=>s+c.qty*c.sellPrice,0);
+  const discount = parseFloat(document.getElementById('billDiscount').value)||0;
+  const grand = Math.max(0, itemsTotal - discount);
+  document.getElementById('tItems').textContent = rupee(itemsTotal);
+  document.getElementById('tDiscount').textContent = '-'+rupee(discount);
+  document.getElementById('tGrand').textContent = rupee(grand);
+}
+
+async function saveBill(){
+  if(cart.length===0) return;
+  const itemsTotal = cart.reduce((s,c)=>s+c.qty*c.sellPrice,0);
+  const costTotal = cart.reduce((s,c)=>s+c.qty*c.buyPrice,0);
+  const discount = parseFloat(document.getElementById('billDiscount').value)||0;
+  const grand = Math.max(0, itemsTotal - discount);
+  const profit = grand - costTotal;
+  const now = new Date();
+  const bill = {
+    id: uid('bill'),
+    date: now.toISOString().slice(0,10),
+    createdAt: now.getTime(),
+    customer: document.getElementById('billCustomer').value.trim() || 'Walk-in customer',
+    items: cart.map(c=>({productId:c.productId, name:c.name, unit:c.unit, qty:c.qty, buyPrice:c.buyPrice, sellPrice:c.sellPrice, lineTotal:c.qty*c.sellPrice})),
+    itemsTotal, discount, grandTotal:grand, costTotal, profit
+  };
+  await put('bills', bill);
+  await cloudDB.collection('bills').doc(bill.id).set(bill);
+  await cloudDB.collection('bills').doc(bill.id).set(bill);
+  // deduct stock
+  for(const c of cart){
+    const p = PRODUCTS.find(x=>x.id===c.productId);
+    if(p){ p.quantity = Math.max(0, p.quantity - c.qty); await put('products', p); await cloudDB.collection('products').doc(p.id).set(p); }
+  }
+  await loadProducts();
+  await loadBills();
+  showReceipt(bill);
+  cart = [];
+  document.getElementById('billDiscount').value = 0;
+  document.getElementById('billCustomer').value = '';
+  renderCart();
+  renderDashboard();
+}
+
+function showReceipt(bill){
+  const area = document.getElementById('printArea');
+  const lines = bill.items.map(i=>`<div class="rline"><span>${esc(i.name)} x${i.qty}</span><span>${rupee(i.lineTotal)}</span></div>`).join('');
+  area.innerHTML = `
+    <div class="center"><strong>RENUKA SUPER MARKET</strong></div>
+    <div class="center">${new Date(bill.createdAt).toLocaleString('en-IN')}</div>
+    <div class="center">Bill: ${bill.id.slice(-8)}</div>
+    <hr>
+    <div class="rline"><span>Customer</span><span>${esc(bill.customer)}</span></div>
+    <hr>
+    ${lines}
+    <hr>
+    <div class="rline"><span>Items total</span><span>${rupee(bill.itemsTotal)}</span></div>
+    <div class="rline"><span>Discount</span><span>-${rupee(bill.discount)}</span></div>
+    <div class="rline"><strong>TOTAL</strong><strong>${rupee(bill.grandTotal)}</strong></div>
+    <hr>
+    <div class="center">Thank you, visit again!</div>
+  `;
+  document.getElementById('receiptModalBackdrop').classList.add('open');
+}
+function closeReceiptModal(){ document.getElementById('receiptModalBackdrop').classList.remove('open'); }
+
+/* ---------------- dashboard ---------------- */
+function renderDashboard(){
+  const today = todayStr();
+  const mon = monthStr();
+  const todayBills = BILLS.filter(b=>b.date===today);
+  const monthBills = BILLS.filter(b=>b.date.startsWith(mon));
+  const todaySales = todayBills.reduce((s,b)=>s+b.grandTotal,0);
+  const todayProfit = todayBills.reduce((s,b)=>s+b.profit,0);
+  const monSales = monthBills.reduce((s,b)=>s+b.grandTotal,0);
+  const monProfit = monthBills.reduce((s,b)=>s+b.profit,0);
+  const stockValue = PRODUCTS.reduce((s,p)=>s+p.buyPrice*p.quantity,0);
+  const lowStock = PRODUCTS.filter(p=>p.quantity<=(p.lowStock||0)).length;
+
+  document.getElementById('dToday').textContent = rupee(todaySales);
+  document.getElementById('dTodayProfit').textContent = rupee(todayProfit);
+  document.getElementById('dMonth').textContent = rupee(monSales);
+  document.getElementById('dMonthProfit').textContent = rupee(monProfit);
+  document.getElementById('dStockValue').textContent = rupee(stockValue);
+  document.getElementById('dLowStock').textContent = lowStock;
+
+  const recent = BILLS.slice(0,6);
+  const rb = document.getElementById('recentBills');
+  if(recent.length===0){ rb.innerHTML = '<div class="empty">No bills yet. Create your first bill.</div>'; return; }
+  rb.innerHTML = `<table><thead><tr><th>Time</th><th>Customer</th><th class="num">Total</th></tr></thead><tbody>` +
+    recent.map(b=>`<tr><td>${new Date(b.createdAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td><td>${esc(b.customer)}</td><td class="num">${rupee(b.grandTotal)}</td></tr>`).join('') +
+    `</tbody></table>`;
+}
+
+/* ---------------- reports ---------------- */
+function setReportTab(t){
+  document.querySelectorAll('.rtab').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+  document.getElementById('rp-daily').style.display = t==='daily'?'block':'none';
+  document.getElementById('rp-monthly').style.display = t==='monthly'?'block':'none';
+  document.getElementById('rp-gross').style.display = t==='gross'?'block':'none';
+}
+function initReportDates(){
+  if(!document.getElementById('dailyDate').value) document.getElementById('dailyDate').value = todayStr();
+  if(!document.getElementById('monthPick').value) document.getElementById('monthPick').value = monthStr();
+  if(!document.getElementById('grossFrom').value){
+    const d = new Date(); d.setDate(d.getDate()-30);
+    document.getElementById('grossFrom').value = d.toISOString().slice(0,10);
+  }
+  if(!document.getElementById('grossTo').value) document.getElementById('grossTo').value = todayStr();
+}
+function renderDaily(){
+  const date = document.getElementById('dailyDate').value || todayStr();
+  const dayBills = BILLS.filter(b=>b.date===date);
+  const sales = dayBills.reduce((s,b)=>s+b.grandTotal,0);
+  const profit = dayBills.reduce((s,b)=>s+b.profit,0);
+  document.getElementById('dayTotalSales').textContent = rupee(sales);
+  document.getElementById('dayTotalProfit').textContent = rupee(profit);
+  const wrap = document.getElementById('dayBillsList');
+  if(dayBills.length===0){ wrap.innerHTML = '<div class="empty">No bills on this date.</div>'; return; }
+  wrap.innerHTML = `<table><thead><tr><th>Time</th><th>Customer</th><th class="num">Total</th><th class="num">Profit</th></tr></thead><tbody>` +
+    dayBills.sort((a,b)=>a.createdAt-b.createdAt).map(b=>`<tr><td>${new Date(b.createdAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(b.customer)}</td><td class="num">${rupee(b.grandTotal)}</td><td class="num">${rupee(b.profit)}</td></tr>`).join('') +
+    `</tbody></table>`;
+}
+function renderMonthly(){
+  const mon = document.getElementById('monthPick').value || monthStr();
+  const monBills = BILLS.filter(b=>b.date.startsWith(mon));
+  const sales = monBills.reduce((s,b)=>s+b.grandTotal,0);
+  const profit = monBills.reduce((s,b)=>s+b.profit,0);
+  document.getElementById('monTotalSales').textContent = rupee(sales);
+  document.getElementById('monTotalProfit').textContent = rupee(profit);
+  const byDay = {};
+  monBills.forEach(b=>{
+    byDay[b.date] = byDay[b.date] || {sales:0, profit:0};
+    byDay[b.date].sales += b.grandTotal;
+    byDay[b.date].profit += b.profit;
+  });
+  const days = Object.keys(byDay).sort();
+  const tbody = document.querySelector('#monthTable tbody');
+  if(days.length===0){ tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px;">No bills this month.</td></tr>'; return; }
+  tbody.innerHTML = days.map(d=>`<tr><td>${d}</td><td class="num">${rupee(byDay[d].sales)}</td><td class="num">${rupee(byDay[d].profit)}</td></tr>`).join('');
+}
+function renderGross(){
+  const from = document.getElementById('grossFrom').value;
+  const to = document.getElementById('grossTo').value;
+  if(!from || !to) return;
+  const inRange = BILLS.filter(b=> b.date>=from && b.date<=to);
+  const revenue = inRange.reduce((s,b)=>s+b.grandTotal,0);
+  const cost = inRange.reduce((s,b)=>s+b.costTotal,0);
+  const profit = revenue - cost;
+  const margin = revenue>0 ? (profit/revenue*100) : 0;
+  document.getElementById('gRevenue').textContent = rupee(revenue);
+  document.getElementById('gCost').textContent = rupee(cost);
+  document.getElementById('gProfit').textContent = rupee(profit);
+  document.getElementById('gMargin').textContent = margin.toFixed(1)+'%';
+
+  const prodAgg = {};
+  inRange.forEach(b=>b.items.forEach(i=>{
+    prodAgg[i.name] = prodAgg[i.name] || {qty:0, profit:0};
+    prodAgg[i.name].qty += i.qty;
+    prodAgg[i.name].profit += (i.sellPrice-i.buyPrice)*i.qty;
+  }));
+  const top = Object.entries(prodAgg).sort((a,b)=>b[1].qty-a[1].qty).slice(0,10);
+  const tbody = document.querySelector('#topTable tbody');
+  if(top.length===0){ tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px;">No sales in this range.</td></tr>'; return; }
+  tbody.innerHTML = top.map(([name,v])=>`<tr><td>${esc(name)}</td><td class="num">${v.qty}</td><td class="num">${rupee(v.profit)}</td></tr>`).join('');
+}
+
+/* ---------------- backup / restore ---------------- */
+async function exportData(){
+  const data = { products: PRODUCTS, bills: BILLS, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `renuka_market_backup_${todayStr()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+async function importData(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!confirm('This will replace all current data with the backup file. Continue?')) { evt.target.value=''; return; }
+    await clearStore('products');
+    await clearStore('bills');
+    for(const p of (data.products||[])) await put('products', p);
+    for(const b of (data.bills||[])) await put('bills', b);
+    await loadProducts(); await loadBills();
+    renderDashboard(); renderInventory();
+    toast('Backup restored');
+  }catch(e){
+    toast('Could not read that file');
+  }
+  evt.target.value='';
+}
+function exportCSV(){
+  let rows = [['Bill ID','Date','Time','Customer','Product','Qty','Buy Price','Sell Price','Line Total']];
+  BILLS.forEach(b=>{
+    b.items.forEach(i=>{
+      rows.push([b.id, b.date, new Date(b.createdAt).toLocaleTimeString('en-IN'), b.customer, i.name, i.qty, i.buyPrice, i.sellPrice, i.lineTotal]);
+    });
+  });
+  const csv = rows.map(r=>r.map(v=>`"${(v+'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `renuka_market_bills_${todayStr()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded');
+}
+async function resetAll(){
+  if(!confirm('Erase ALL products and bills from this phone? This cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? Consider exporting a backup first.')) return;
+  await clearStore('products');
+  await clearStore('bills');
+  await loadProducts(); await loadBills();
+  renderDashboard(); renderInventory();
+  toast('All data erased');
+}
+
+/* ---------------- boot ---------------- */
+(async function init(){
+  await openDB();
+  startCloudSync();
+  await loadProducts();
+  await loadBills();
+  renderDashboard();
+  renderInventory();
+  renderCart();
+})();
+</script>
+</body>
+</html>
